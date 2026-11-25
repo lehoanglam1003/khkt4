@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+
+  body {
+    background-color: #f4f7fb;
+    color: #0f172a;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+  }
+}
+
+/* High Contrast Mode (WCAG AAA accessibility for seniors with low vision) */
+html.high-contrast {
+  font-size: 106.25%;
+}
+
+html.high-contrast body,
+html.high-contrast #top {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+html.high-contrast header,
+html.high-contrast nav[aria-label="Điều hướng di động"] {
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+html.high-contrast section,
+html.high-contrast [role="dialog"] {
+  border-color: #000000 !important;
+  border-width: 2px !important;
+  background-color: #ffffff !important;
+}
+
+html.high-contrast .border-slate-100,
+html.high-contrast .border-slate-200,
+html.high-contrast .border-slate-300,
+html.high-contrast .divide-slate-100 > :not(:last-child) {
+  border-color: #0f172a !important;
+}
+
+html.high-contrast .text-slate-400,
+html.high-contrast .text-slate-500,
+html.high-contrast .text-slate-600,
+html.high-contrast .text-slate-700,
+html.high-contrast .text-slate-800,
+html.high-contrast .text-slate-900 {
+  color: #000000 !important;
+}
+
+html.high-contrast .bg-slate-50,
+html.high-contrast .bg-slate-100 {
+  background-color: #f8fafc !important;
+  border-color: #0f172a !important;
+}
+
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  border-width: 2px !important;
+}
+
+html.high-contrast input::placeholder,
+html.high-contrast textarea::placeholder {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+html.high-contrast .bg-blue-700,
+html.high-contrast .bg-blue-800 {
+  background-color: #0038a8 !important;
+  color: #ffffff !important;
+}
+
+html.high-contrast .text-blue-700,
+html.high-contrast .text-blue-900 {
+  color: #002d8a !important;
+}
+
+html.high-contrast .border-blue-700 {
+  border-color: #002d8a !important;
+}
+
+html.high-contrast .bg-red-600,
+html.high-contrast .bg-red-700 {
+  background-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+html.high-contrast .bg-red-50,
+html.high-contrast .bg-red-100 {
+  background-color: #fef2f2 !important;
+  border-color: #991b1b !important;
+}
+
+html.high-contrast .text-red-600,
+html.high-contrast .text-red-700,
+html.high-contrast .text-red-800,
+html.high-contrast .text-red-900 {
+  color: #7f1d1d !important;
+}
+
+html.high-contrast .bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+  border-color: #065f46 !important;
+}
+
+html.high-contrast .bg-emerald-600,
+html.high-contrast .bg-emerald-700 {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+html.high-contrast .text-emerald-700,
+html.high-contrast .text-emerald-900,
+html.high-contrast .text-emerald-950 {
+  color: #064e3b !important;
+}
+
+html.high-contrast .bg-amber-50,
+html.high-contrast .bg-orange-50 {
+  background-color: #fff7ed !important;
+  border-color: #9a3412 !important;
+}
+
+html.high-contrast .bg-orange-500,
+html.high-contrast .bg-orange-600 {
+  background-color: #9a3412 !important;
+  color: #ffffff !important;
+}
+
+html.high-contrast .text-amber-600,
+html.high-contrast .text-amber-900,
+html.high-contrast .text-orange-700,
+html.high-contrast .text-orange-900,
+html.high-contrast .text-orange-950 {
+  color: #7c2d12 !important;
+}
+
+html.high-contrast button:focus-visible,
+html.high-contrast a:focus-visible,
+html.high-contrast input:focus-visible,
+html.high-contrast textarea:focus-visible,
+html.high-contrast select:focus-visible {
+  outline: 3px solid #0038a8 !important;
+  outline-offset: 2px !important;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SafeAI — Trợ lý An toàn & Nhận diện Lừa đảo",
+  "description": "Ứng dụng phân tích ảnh, tin nhắn, mã QR, đường link và giọng nói giúp phòng chống lừa đảo trực tuyến, thiết kế dễ đọc cho người cao tuổi và gia đình.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
