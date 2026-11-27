@@ -1,11 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  getGuideStepsByTopic,
   GUIDE_QR_SAMPLES,
   GUIDE_VOICE_SAMPLES,
   inspectGuideQrSample,
   inspectGuideVoiceSample,
+  OVERVIEW_GUIDE_STEPS,
+  SOS_FAMILY_GUIDE_STEPS,
 } from './guideContent.ts';
+
+test('getGuideStepsByTopic returns complete steps for overview, qr, voice, and sos_family', () => {
+  assert.equal(getGuideStepsByTopic('overview').length, OVERVIEW_GUIDE_STEPS.length);
+  assert.ok(OVERVIEW_GUIDE_STEPS.length >= 4);
+  assert.equal(getGuideStepsByTopic('sos_family').length, SOS_FAMILY_GUIDE_STEPS.length);
+  assert.ok(SOS_FAMILY_GUIDE_STEPS.length >= 4);
+  assert.ok(getGuideStepsByTopic('qr').length >= 3);
+  assert.ok(getGuideStepsByTopic('voice').length >= 3);
+});
 
 test('inspectGuideQrSample decodes VietQR police scam sample as red with valid CRC-16', () => {
   const policeSample = GUIDE_QR_SAMPLES.find((s) => s.id === 'qr-fake-police');

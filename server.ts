@@ -39,6 +39,14 @@ import type {
   VoiceRegion,
 } from './src/types/safeai.ts';
 
+const DIST_INDEX_PATH = path.resolve(process.cwd(), 'dist', 'index.html');
+const IS_DEV_CLI =
+  process.env.NODE_ENV === 'development' ||
+  process.argv.some((arg) => arg === '--port' || arg.startsWith('--port='));
+const IS_PROD =
+  process.env.NODE_ENV === 'production' ||
+  (!IS_DEV_CLI && fs.existsSync(DIST_INDEX_PATH));
+
 function resolveListenPort(): number {
   const portFlagIdx = process.argv.findIndex((arg) => arg === '--port' || arg === '-p');
   if (portFlagIdx !== -1 && process.argv[portFlagIdx + 1]) {
@@ -52,7 +60,7 @@ function resolveListenPort(): number {
   }
   const envPort = Number(process.env.PORT || 0);
   const nginxPort = Number(process.env.NGINX_PORT || 0);
-  if (process.env.NODE_ENV !== 'production' && envPort > 0 && nginxPort > 0 && envPort === nginxPort) {
+  if (envPort > 0 && nginxPort > 0 && envPort === nginxPort) {
     return Number(process.env.DEFAULT_APP_PORT || 3000);
   }
   return envPort > 0 ? envPort : 3000;
@@ -1726,7 +1734,7 @@ Kiểm tra kỹ cả 5 khía cạnh:
   const httpServer = createServer(app);
 
   // Vite or Static Frontend
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = IS_PROD;
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     const hmrDisabled = process.env.DISABLE_HMR === 'true';

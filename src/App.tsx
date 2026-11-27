@@ -68,7 +68,6 @@ const DEFAULT_CHALLENGE: FamilyChallengeConfig = {
 };
 
 export default function App() {
-  const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
 
   const [activeTab, setActiveTab] = useState<AppTab>('scan');
@@ -96,7 +95,7 @@ export default function App() {
   const [brakeModalOpen, setBrakeModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [guideModalOpen, setGuideModalOpen] = useState(false);
-  const [guideInitialTopic, setGuideInitialTopic] = useState<GuideTopic>('qr');
+  const [guideInitialTopic, setGuideInitialTopic] = useState<GuideTopic>('overview');
   const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
   const [recoveryScan, setRecoveryScan] = useState<ScanResult | null>(null);
   const [sharedImageBlob, setSharedImageBlob] = useState<Blob | null>(null);
@@ -158,37 +157,8 @@ export default function App() {
     }
   }, []);
 
-  // Restore authenticated session or guest preference on first mount
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
-        const res = await fetch('/api/auth/me', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!cancelled && res.ok) {
-          const data = (await res.json()) as { user: UserAccount | null };
-          if (data.user) {
-            setCurrentUser(data.user);
-            setAuthChecked(true);
-            return;
-          }
-        }
-      } catch {
-        // ignore and check guest fallback
-      }
-      if (!cancelled) {
-        if (localStorage.getItem(GUEST_USER_KEY) === '1') {
-          setCurrentUser({ phone: 'guest', displayName: 'Khách thử nghiệm', isGuest: true });
-        }
-        setAuthChecked(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Always land directly on the Login screen when entering the app
+  // (saved diary, contacts, and SOS numbers are restored once the user selects or enters an account).
 
   // Load user-scoped data whenever currentUser changes
   useEffect(() => {
@@ -514,20 +484,38 @@ export default function App() {
     });
   }
 
-  if (!authChecked) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] text-base font-semibold text-slate-600">
-        Đang tải SafeAI...
-      </div>
-    );
-  }
+  const guideModalElement = (
+    <InteractiveGuideModal
+      isOpen={guideModalOpen}
+      initialTopic={guideInitialTopic}
+      isLoggedIn={Boolean(currentUser)}
+      onClose={() => {
+        stopSpeaking();
+        setGuideModalOpen(false);
+      }}
+      onGoToScanner={() => setActiveTab('scan')}
+      onGoToVoiceShield={() => setActiveTab('scan')}
+      onGoToLookup={() => setActiveTab('lookup')}
+      onOpenSos={handleTriggerSos}
+      onSpeakText={(txt) => void handleSpeakText(txt)}
+      onStopSpeaking={stopSpeaking}
+      isSpeaking={isSpeaking}
+    />
+  );
 
   if (!currentUser) {
     return (
-      <LoginScreen
-        onAuthenticated={handleAuthenticated}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
+      <>
+        <LoginScreen
+          onAuthenticated={handleAuthenticated}
+          onContinueAsGuest={handleContinueAsGuest}
+          onOpenGuide={() => {
+            setGuideInitialTopic('overview');
+            setGuideModalOpen(true);
+          }}
+        />
+        {guideModalElement}
+      </>
     );
   }
 
@@ -543,7 +531,7 @@ export default function App() {
         onLogout={() => void handleLogout()}
         onOpenSettings={() => setSettingsModalOpen(true)}
         onOpenGuide={() => {
-          setGuideInitialTopic('qr');
+          setGuideInitialTopic('overview');
           setGuideModalOpen(true);
         }}
       />
@@ -757,26 +745,14 @@ export default function App() {
         onChangeVoiceRegion={setVoiceRegion}
         onOpenFamilySettings={() => setActiveTab('lookup')}
         onOpenGuide={() => {
-          setGuideInitialTopic('qr');
+          setGuideInitialTopic('overview');
           setGuideModalOpen(true);
         }}
         currentUser={currentUser}
         onLogout={() => void handleLogout()}
       />
 
-      <InteractiveGuideModal
-        isOpen={guideModalOpen}
-        initialTopic={guideInitialTopic}
-        onClose={() => {
-          stopSpeaking();
-          setGuideModalOpen(false);
-        }}
-        onGoToScanner={() => setActiveTab('scan')}
-        onGoToVoiceShield={() => setActiveTab('scan')}
-        onSpeakText={(txt) => void handleSpeakText(txt)}
-        onStopSpeaking={stopSpeaking}
-        isSpeaking={isSpeaking}
-      />
+      {guideModalElement}
 
       {!brakeModalOpen && !recoveryModalOpen && !guideModalOpen && !settingsModalOpen && (
         <button

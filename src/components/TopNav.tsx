@@ -71,7 +71,7 @@ export function TopNav({
             <button
               type="button"
               onClick={onOpenGuide}
-              aria-label="Hướng dẫn quét QR và giọng nói"
+              aria-label="Hướng dẫn sử dụng SafeAI"
               title="Hướng dẫn sử dụng dễ hiểu"
               className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-900 transition-colors hover:bg-blue-100"
             >

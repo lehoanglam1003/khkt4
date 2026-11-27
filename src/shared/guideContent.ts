@@ -2,7 +2,7 @@ import { detectLiveCallRisk, evaluateRuleBasedMessage, inspectUrlHeuristics } fr
 import { computeEmvCrc16, evaluateVietQrRisk, parseVietQrPayload } from './vietqrParser.ts';
 import type { AlertLevel, VietQrInfo } from '../types/safeai.ts';
 
-export type GuideTopic = 'qr' | 'voice';
+export type GuideTopic = 'overview' | 'qr' | 'voice' | 'sos_family';
 
 export interface GuideStep {
   stepNumber: number;
@@ -11,6 +11,41 @@ export interface GuideStep {
   tipForSeniors: string;
 }
 
+export const OVERVIEW_GUIDE_STEPS: GuideStep[] = [
+  {
+    stepNumber: 1,
+    title: 'Bước 1: Gửi tin nhắn, ảnh chụp hoặc nói micro vào cùng một chỗ',
+    summary:
+      'Tại mục chính "Kiểm tra & Hỏi", Ông/Bà có thể dán đoạn tin nhắn lạ, bấm "Chọn ảnh" để tải ảnh chụp màn hình / mã QR, hoặc bấm "Nói micro" để kể lại sự việc bằng giọng nói tiếng Việt rồi bấm "Kiểm tra & Gửi".',
+    tipForSeniors:
+      'Nếu bấm chọn ảnh, Ông/Bà có thể gõ thêm vài chữ hoàn cảnh (ví dụ: "Số lạ nhắn đòi tiền") để SafeAI giải thích sát tình huống hơn.',
+  },
+  {
+    stepNumber: 2,
+    title: 'Bước 2: Nhìn 3 màu Đỏ – Cam – Xanh & nghe đọc tiếng Việt',
+    summary:
+      'SafeAI báo kết quả bằng 3 màu rõ ràng: Đỏ (Nguy hiểm — dừng ngay), Cam (Đáng ngờ — chưa vội tin) và Xanh (An toàn — chưa thấy dấu hiệu giả mạo). Nếu bật tự động đọc, máy sẽ đọc to lời khuyên bằng giọng Bắc, Trung hoặc Nam.',
+    tipForSeniors:
+      'Chữ hơi nhỏ thì Ông/Bà bấm vào "Cài đặt" ở góc trên bên phải để bật "Chế độ chữ đậm & rõ nét".',
+  },
+  {
+    stepNumber: 3,
+    title: 'Bước 3: Gửi đầy đủ vụ việc cho con cháu chỉ với 1 bấm',
+    summary:
+      'Ngay dưới kết quả kiểm tra có khung "Gửi nhờ con cháu xem giúp". SafeAI tự soạn sẵn toàn bộ nội dung gốc, đánh giá rủi ro, số điện thoại, đường link và tài khoản ngân hàng liên quan để Ông/Bà bấm "Sao chép gửi Zalo" hoặc "Nhắn tin SMS".',
+    tipForSeniors:
+      'Nhờ gửi kèm nguyên văn nội dung gốc nên con cháu đọc tin nhắn là hiểu ngay đầu đuôi câu chuyện để hỗ trợ kịp thời.',
+  },
+  {
+    stepNumber: 4,
+    title: 'Bước 4: Tra cứu nguồn & luyện phản xạ ở mục Nhật ký',
+    summary:
+      'Mục "Tra cứu" giúp kiểm tra riêng từng đường link, số điện thoại, mã VietQR và lưu Danh bạ tin cậy / Danh sách chặn. Mục "Nhật ký" tự lưu lịch sử đã kiểm tra kèm bài tập trắc nghiệm và mô phỏng cuộc gọi giả danh.',
+    tipForSeniors:
+      'Ông/Bà nên thỉnh thoảng mở mục "Nhật ký" tập thử vài tình huống để quen phản xạ từ chối đọc mã OTP.',
+  },
+];
+
 export const QR_GUIDE_STEPS: GuideStep[] = [
   {
     stepNumber: 1,
@@ -18,7 +53,7 @@ export const QR_GUIDE_STEPS: GuideStep[] = [
     summary:
       'Khi Cụ tải ảnh chụp màn hình Zalo hoặc biên lai, SafeAI tự động cắt và rà 6 vùng khác nhau (toàn ảnh, phần giữa, nửa dưới và phiên bản tăng độ tương phản) để không bỏ sót mã QR nhỏ nằm ở góc ảnh.',
     tipForSeniors:
-      'Nếu ảnh hơi mờ hoặc nghiêng, Cụ có thể bấm nút "Xoay 90°", "Cắt gần vùng giữa" hoặc "Tăng tương phản chữ" ngay bên dưới ảnh xem trước.',
+      'Nếu ảnh hơi mờ hoặc nghiêng, Cụ có thể bấm "Chỉnh sửa ảnh" rồi chọn "Xoay 90°", "Cắt vùng giữa" hoặc "Làm rõ chữ".',
   },
   {
     stepNumber: 2,
@@ -34,7 +69,7 @@ export const QR_GUIDE_STEPS: GuideStep[] = [
     summary:
       'Cuối cùng, SafeAI kết hợp nội dung chữ trên ảnh, đích đến mã QR và Danh bạ tin cậy / Danh sách chặn của gia đình để gắn nhãn Đỏ (Nguy hiểm), Cam (Cần kiểm tra kỹ) hoặc Xanh (An toàn) và đọc to kết quả bằng tiếng Việt.',
     tipForSeniors:
-      'Thấy MỨC ĐỎ hoặc MỨC CAM, Cụ tuyệt đối không quét chuyển tiền trên app ngân hàng mà bấm "Hỏi con cháu 1 chạm" ngay.',
+      'Thấy MỨC ĐỎ hoặc MỨC CAM, Cụ tuyệt đối không quét chuyển tiền trên app ngân hàng mà bấm gửi ngay cho con cháu kiểm tra.',
   },
 ];
 
@@ -45,7 +80,7 @@ export const VOICE_GUIDE_STEPS: GuideStep[] = [
     summary:
       'SafeAI chuyển lời nói tiếng Việt thành chữ theo hai cách: dùng bộ nhận diện tiếng Việt trực tiếp của trình duyệt (Chrome/Edge) ngay trên máy, hoặc ghi âm gửi bộ chép lời dự phòng. Để nhận diện chuẩn, Cụ hãy mở trang ở tab trình duyệt riêng (HTTPS) và cho phép quyền Micro.',
     tipForSeniors:
-      'Khi nhận cuộc gọi đáng nghi, Cụ bật loa ngoài điện thoại rồi đặt gần máy đang mở SafeAI, hoặc đọc lại nguyên văn điều người kia vừa yêu cầu.',
+      'Khi nhận cuộc gọi đáng nghi, Cụ bật loa ngoài điện thoại rồi đặt gần máy đang mở SafeAI, hoặc bấm "Lá chắn cuộc gọi lạ" → "Bắt đầu nghe & bảo vệ cuộc gọi".',
   },
   {
     stepNumber: 2,
@@ -59,11 +94,53 @@ export const VOICE_GUIDE_STEPS: GuideStep[] = [
     stepNumber: 3,
     title: 'Bước 3: Báo động Đỏ tại chỗ, phát loa "Cúp máy ngay" & báo người thân',
     summary:
-      'Khi phát hiện kịch bản lừa đảo, SafeAI đổi khung cảnh báo sang MỨC ĐỎ, rung cảnh báo (trên điện thoại hỗ trợ), hiện nút phát loa nhắc Cúp máy ngay, và gửi tín hiệu tức thì về máy Con/Cháu nếu đã ghép phòng gia đình.',
+      'Khi phát hiện kịch bản lừa đảo, SafeAI đổi khung cảnh báo sang MỨC ĐỎ, rung cảnh báo (trên điện thoại hỗ trợ), hiện nút phát loa nhắc Cúp máy ngay, và gửi nội dung cuộc gọi về cho Con/Cháu.',
     tipForSeniors:
-      'Nếu không tiện dùng micro, Cụ vẫn có thể bấm nút "Thử kịch bản cuộc gọi giả danh" hoặc vào "Nhật ký → Tập trận cuộc gọi giọng nói" để luyện phản xạ.',
+      'Nếu không tiện dùng micro, Cụ vẫn có thể bấm nút "Nghe thử kịch bản giả danh" hoặc tải file ghi âm (.mp3, .wav) ở mục bên dưới.',
   },
 ];
+
+export const SOS_FAMILY_GUIDE_STEPS: GuideStep[] = [
+  {
+    stepNumber: 1,
+    title: 'Bước 1: Lưu sẵn 2 số điện thoại người thân (SOS) & Câu hỏi bí mật',
+    summary:
+      'Vào mục "Tra cứu" → kéo xuống phần "Số liên hệ khẩn cấp (SOS)" để lưu số con trai/con gái/người thân. Đồng thời đặt "Câu hỏi bí mật gia đình" (ví dụ: tên thú cưng đầu tiên của nhà) để đối chất khi có người mạo danh người thân vay tiền gấp.',
+    tipForSeniors:
+      'Chỉ cần lưu 1 lần là mỗi khi bấm nút đỏ SOS Khẩn cấp hoặc nhắn SMS nhờ con cháu, số điện thoại đã được điền sẵn.',
+  },
+  {
+    stepNumber: 2,
+    title: 'Bước 2: Bấm nút đỏ "SOS Khẩn cấp" ở góc dưới khi hoảng hoặc bị hù dọa',
+    summary:
+      'Nút đỏ "SOS Khẩn cấp" luôn nổi ở góc dưới bên phải màn hình. Khi bấm vào, SafeAI bật "Khóa bình tĩnh 60 giây" giúp Ông/Bà hít thở chậm lại, kèm danh sách việc cần làm và nút gọi thẳng người thân hoặc Công an 113.',
+    tipForSeniors:
+      'Kẻ gian luôn hù dọa "khóa tài khoản trong vài phút" để Ông/Bà mất bình tĩnh. Hãy cúp máy, uống ngụm nước và bấm SOS gọi con cháu ngay.',
+  },
+  {
+    stepNumber: 3,
+    title: 'Bước 3: Cấp cứu "Giờ vàng" nếu lỡ chuyển tiền hoặc bấm link / cài .apk',
+    summary:
+      'Nếu đã lỡ thao tác theo kẻ gian, bấm nút "Tôi lỡ chuyển tiền / bấm link rồi" (trong kết quả hoặc trong bảng SOS) để gọi thẳng tổng đài khóa thẻ 24/7 của ngân hàng, tắt Wi-Fi/4G, gỡ app lạ và sao chép sẵn Biên bản trình báo Công an.',
+    tipForSeniors:
+      '15 phút đầu tiên là "giờ vàng" để ngân hàng kịp tra soát phong tỏa tài khoản nhận.',
+  },
+  {
+    stepNumber: 4,
+    title: 'Bước 4: Ghép nối máy Bố/Mẹ & máy Con/Cháu bằng mã 6 số',
+    summary:
+      'Trong mục "Tra cứu" → "Cảnh báo Gia đình Thời gian thực", máy Bố/Mẹ chọn vai trò "Máy Bố / Mẹ" để tạo mã 6 số; máy Con/Cháu chọn "Máy Con / Cháu" và nhập mã đó. Khi máy Bố/Mẹ gặp Cảnh báo Đỏ hoặc bấm SOS, máy Con/Cháu sẽ hú/hiện cảnh báo ngay lập tức.',
+    tipForSeniors:
+      'Nên nhờ con cháu nhập mã ghép phòng 1 lần lúc ngồi cùng nhau để sau này ở xa vẫn theo dõi an toàn cho Bố/Mẹ.',
+  },
+];
+
+export function getGuideStepsByTopic(topic: GuideTopic): GuideStep[] {
+  if (topic === 'overview') return OVERVIEW_GUIDE_STEPS;
+  if (topic === 'qr') return QR_GUIDE_STEPS;
+  if (topic === 'voice') return VOICE_GUIDE_STEPS;
+  return SOS_FAMILY_GUIDE_STEPS;
+}
 
 function buildGuideVietQrString(
   bin: string,

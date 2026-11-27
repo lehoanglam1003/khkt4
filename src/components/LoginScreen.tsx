@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   CheckCircle2,
   Copy,
+  HelpCircle,
   KeyRound,
   Loader2,
   Lock,
@@ -15,12 +16,17 @@ import type { UserAccount } from '../types/safeai';
 interface LoginScreenProps {
   onAuthenticated: (user: UserAccount, token?: string) => void;
   onContinueAsGuest: () => void;
+  onOpenGuide?: () => void;
 }
 
 type AuthMode = 'login' | 'register' | 'reset';
 
-export function LoginScreen({ onAuthenticated, onContinueAsGuest }: LoginScreenProps) {
-  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+export function LoginScreen({
+  onAuthenticated,
+  onContinueAsGuest,
+  onOpenGuide,
+}: LoginScreenProps) {
+  const [showPhoneAuth, setShowPhoneAuth] = useState(true);
   const [mode, setMode] = useState<AuthMode>('login');
   const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -139,6 +145,17 @@ export function LoginScreen({ onAuthenticated, onContinueAsGuest }: LoginScreenP
             <p className="mt-2.5 text-base leading-relaxed text-slate-300">
               Dễ dùng chỉ với 1 chạm: kiểm tra ảnh chụp tin nhắn, mã QR chuyển tiền và hỏi đáp bằng giọng nói tiếng Việt.
             </p>
+
+            {onOpenGuide && (
+              <button
+                type="button"
+                onClick={onOpenGuide}
+                className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20 sm:w-auto"
+              >
+                <HelpCircle className="h-5 w-5 shrink-0 text-blue-200" aria-hidden="true" />
+                <span>Xem hướng dẫn sử dụng SafeAI</span>
+              </button>
+            )}
           </div>
 
           <ul className="mt-6 hidden space-y-3.5 border-t border-white/15 pt-6 text-sm text-slate-200 sm:block lg:mt-8">
