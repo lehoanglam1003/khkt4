@@ -79,6 +79,15 @@ export function EmergencyBrakeModal({
     return () => window.clearInterval(timer);
   }, [isOpen, unlockedEarly, cooldownSeconds]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const activeSituation =
@@ -112,6 +121,9 @@ export function EmergencyBrakeModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="brake-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">

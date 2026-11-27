@@ -115,6 +115,16 @@ export function LookupAndContactsPanel({
   const [insights, setInsights] = useState<CommunityInsights | null>(null);
 
   useEffect(() => {
+    setSos1(sosNumbers[0]);
+    setSos2(sosNumbers[1]);
+  }, [sosNumbers]);
+
+  useEffect(() => {
+    setChallengeQuestion(familyChallenge.question);
+    setChallengeHint(familyChallenge.answerHint);
+  }, [familyChallenge.question, familyChallenge.answerHint]);
+
+  useEffect(() => {
     if (initialQuery) {
       setLookupInput(initialQuery);
       void runLookup(initialQuery);
@@ -233,13 +243,21 @@ export function LookupAndContactsPanel({
 
   async function handleVerifySignature() {
     if (!sigText.trim()) return;
-    const res = await fetch('/api/verify-signature', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: sigText }),
-    });
-    const data = await res.json();
-    setSigResult(data);
+    try {
+      const res = await fetch('/api/verify-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: sigText }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSigResult({ valid: false, message: data.error || 'Chưa thể kiểm tra chữ ký lúc này.' });
+        return;
+      }
+      setSigResult(data);
+    } catch {
+      setSigResult({ valid: false, message: 'Chưa thể kết nối máy chủ để kiểm tra chữ ký.' });
+    }
   }
 
   function handleSubmitContact(e: React.FormEvent) {

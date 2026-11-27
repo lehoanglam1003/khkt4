@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
   analyzeReceiptConsistency,
   classifyChatAlertLevel,
+  detectEmergencyTransferScam,
   detectFamilyImpersonationTrigger,
   detectImpersonation,
   detectLiveCallRisk,
+  evaluateRuleBasedMessage,
   extractEntitiesFromText,
   inspectUrlHeuristics,
   isOfficialCarrierPromotion,
@@ -158,4 +160,50 @@ test('classifyChatAlertLevel assigns red, orange, and green levels accurately fo
     classifyChatAlertLevel('Cháu ơi sáng nay bác kiểm tra tin nhắn thế nào cho an toàn?', 'Cháu chào Cụ!'),
     'green'
   );
+});
+
+test('detectEmergencyTransferScam and evaluateRuleBasedMessage flag school/hospital emergency transfer scams as red without duplicate warning text', () => {
+  const scamMessage =
+    'Alo Bác ơi, cháu là thầy giáo cháu An. Cháu An bị ngã cầu thang trường học chấn thương sọ não, đang cấp cứu tại BV Chợ Rẫy. Bác chuyển gấp 20 triệu vào STK 1029384756 (Vietinbank - Le Van C) để bác sĩ mổ gấp!';
+
+  const emergencyCheck = detectEmergencyTransferScam(scamMessage);
+  assert.equal(emergencyCheck.triggered, true);
+  assert.equal(emergencyCheck.isTeacherOrMedical, true);
+
+  const result = evaluateRuleBasedMessage(scamMessage, '', []);
+  assert.equal(result.alertLevel, 'red');
+  assert.equal(result.familyChallengeTriggered, true);
+  assert.ok(result.extractedEntities.bankAccounts.includes('1029384756'));
+
+  if (result.impersonationWarning) {
+    const occurrences = result.reply.split(result.impersonationWarning).length - 1;
+    assert.equal(occurrences, 1, 'impersonationWarning must never appear twice in reply');
+  }
+
+  const liveRisk = detectLiveCallRisk(scamMessage);
+  assert.equal(liveRisk.level, 'red');
+});
+
+test('mergeImageScanSignals never duplicates impersonationWarning inside reply when escalating green to orange', () => {
+  const merged = mergeImageScanSignals(
+    {
+      alertLevel: 'green',
+      scamType: 'Nội dung chưa thấy dấu hiệu lừa đảo',
+      confidence: 'medium',
+      summary: 'Nội dung trông hợp lý và chưa ghi nhận dấu hiệu thúc ép hoặc đòi thông tin nhạy cảm.',
+      visualEvidence: [],
+      extractedText: 'Xin chào, đây là thông báo từ Vietinbank.',
+      extractedEntities: { urls: [], phones: [], bankAccounts: [], qrPayload: '' },
+      actionSteps: ['Kiểm tra qua ứng dụng chính thức', 'Kiểm tra qua ứng dụng chính thức'],
+      reply: '',
+    },
+    '',
+    []
+  );
+
+  assert.equal(merged.alertLevel, 'orange');
+  assert.ok(merged.impersonationWarning);
+  const occurrences = merged.reply.split(merged.impersonationWarning!).length - 1;
+  assert.equal(occurrences, 1, 'impersonationWarning must appear exactly once in reply');
+  assert.equal(merged.actionSteps.length, 1, 'duplicate actionSteps should be deduplicated');
 });

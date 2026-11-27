@@ -46,10 +46,10 @@ export function VoiceScamSimulator({ onSpeakText }: VoiceScamSimulatorProps) {
 
   const handleEvaluate = () => {
     const result = evaluateSimulatorResponse(scenario, responseInput);
-    setEvaluation(result);
-    if (result.scoreDelta > 0) {
+    if (!evaluation && result.scoreDelta > 0) {
       setPassedCount((c) => c + 1);
     }
+    setEvaluation(result);
   };
 
   const handleNext = () => {

@@ -235,10 +235,103 @@ export function analyzeReceiptConsistency(text: string): ReceiptForensics {
   };
 }
 
-export function detectFamilyImpersonationTrigger(text: string): boolean {
+export interface EmergencyTransferScamCheck {
+  triggered: boolean;
+  isTeacherOrMedical: boolean;
+  evidence: string;
+}
+
+export function detectEmergencyTransferScam(text: string): EmergencyTransferScamCheck {
   const normalized = stripDiacritics(text);
-  const familyRefs = ['con day', 'chau day', 'me oi', 'bo oi', 'ong oi', 'ba oi', 'nguoi nha', 'mat dien thoai', 'so moi'];
-  const urgentMoney = ['chuyen tien', 'chuyen gap', 'muon tien', 'vay gap', 'dong tien', 'tai nan', 'cap cuu'];
+  const entities = extractEntitiesFromText(text, '');
+
+  const emergencySignals = [
+    'cap cuu',
+    'tai nan',
+    'chan thuong',
+    'nga cau thang',
+    'mo gap',
+    'phau thuat',
+    'nhap vien',
+    'nguy kich',
+    'hon me',
+    'benh vien',
+    'bv ',
+  ];
+  const matchedEmergency = emergencySignals.filter((kw) => normalized.includes(kw));
+  if (matchedEmergency.length === 0) {
+    return { triggered: false, isTeacherOrMedical: false, evidence: '' };
+  }
+
+  const moneyTransferSignals = [
+    'chuyen gap',
+    'chuyen tien',
+    'chuyen khoan',
+    'vien phi',
+    'dong tien',
+    'dong phi',
+    'tam ung',
+    'stk',
+    'so tai khoan',
+  ];
+  const hasMoneyKeyword = moneyTransferSignals.some((kw) => normalized.includes(kw));
+  const hasAmountPhrase = /\b\d+(?:[.,]\d+)?\s*(?:trieu|tr|ty|ngan|nghin|vnd)\b/.test(normalized);
+  const hasBankAccount = entities.bankAccounts.length > 0;
+
+  if (!hasMoneyKeyword && !(hasAmountPhrase && hasBankAccount)) {
+    return { triggered: false, isTeacherOrMedical: false, evidence: '' };
+  }
+
+  const teacherOrMedicalSignals = [
+    'thay giao',
+    'co giao',
+    'hieu truong',
+    'nha truong',
+    'truong hoc',
+    'bac si',
+    'y ta',
+  ];
+  const isTeacherOrMedical = teacherOrMedicalSignals.some((kw) => normalized.includes(kw));
+  const accNote = hasBankAccount ? ` vào STK ${entities.bankAccounts[0]}` : '';
+
+  return {
+    triggered: true,
+    isTeacherOrMedical,
+    evidence: isTeacherOrMedical
+      ? `Xưng danh giáo viên/nhà trường hoặc bác sĩ báo tin cấp cứu/chấn thương và yêu cầu chuyển tiền gấp${accNote}.`
+      : `Báo tin tai nạn/cấp cứu khẩn cấp và thúc ép chuyển tiền gấp${accNote}.`,
+  };
+}
+
+export function detectFamilyImpersonationTrigger(text: string): boolean {
+  if (detectEmergencyTransferScam(text).triggered) {
+    return true;
+  }
+  const normalized = stripDiacritics(text);
+  const familyRefs = [
+    'con day',
+    'chau day',
+    'me oi',
+    'bo oi',
+    'ong oi',
+    'ba oi',
+    'bac oi',
+    'nguoi nha',
+    'mat dien thoai',
+    'so moi',
+  ];
+  const urgentMoney = [
+    'chuyen tien',
+    'chuyen gap',
+    'chuyen khoan',
+    'muon tien',
+    'vay gap',
+    'dong tien',
+    'vien phi',
+    'mo gap',
+    'tai nan',
+    'cap cuu',
+  ];
   return (
     familyRefs.some((f) => normalized.includes(f)) &&
     urgentMoney.some((u) => normalized.includes(u))
@@ -251,6 +344,7 @@ export function detectLiveCallRisk(transcript: string): {
   alertHeadline: string;
 } {
   const normalized = stripDiacritics(transcript);
+  const emergencyCheck = detectEmergencyTransferScam(transcript);
   const criticalTriggers: [string, string][] = [
     ['cong an', 'Xưng danh Công an / cơ quan điều tra'],
     ['vien kiem sat', 'Xưng danh Viện kiểm sát'],
@@ -261,18 +355,32 @@ export function detectLiveCallRisk(transcript: string): {
     ['otp', 'Yêu cầu đọc mã OTP'],
     ['ma xac thuc', 'Yêu cầu đọc mã xác thực'],
     ['chuyen tien', 'Thúc giục chuyển tiền'],
+    ['chuyen gap', 'Thúc giục chuyển tiền gấp'],
     ['tai khoan an toan', 'Dụ chuyển tiền sang "tài khoản an toàn"'],
     ['cai ung dung', 'Hướng dẫn cài ứng dụng lạ'],
     ['chia se man hinh', 'Yêu cầu chia sẻ màn hình'],
     ['sinh trac hoc', 'Lấy cớ cập nhật sinh trắc học'],
     ['vneid', 'Lấy cớ cập nhật VNeID'],
+    ['cap cuu', 'Báo tin cấp cứu khẩn cấp'],
+    ['tai nan', 'Báo tin tai nạn bất ngờ'],
+    ['chan thuong', 'Báo tin chấn thương khẩn'],
+    ['mo gap', 'Thúc giục đóng tiền mổ gấp'],
+    ['vien phi', 'Yêu cầu chuyển tiền viện phí'],
+    ['thay giao', 'Xưng danh thầy/cô giáo'],
+    ['co giao', 'Xưng danh thầy/cô giáo'],
+    ['bac si', 'Xưng danh bác sĩ'],
   ];
 
   const matched = criticalTriggers
     .filter(([kw]) => normalized.includes(kw))
     .map(([, label]) => label);
 
-  if (matched.length >= 2 || normalized.includes('otp') || normalized.includes('tai khoan an toan')) {
+  if (
+    matched.length >= 2 ||
+    normalized.includes('otp') ||
+    normalized.includes('tai khoan an toan') ||
+    emergencyCheck.triggered
+  ) {
     return {
       level: 'red',
       matchedTriggers: matched,
@@ -489,17 +597,35 @@ export function evaluateRuleBasedMessage(
     const urlStatuses = entities.urls.map((u) => inspectUrlHeuristics(u));
     const hasDangerUrl = urlStatuses.some((u) => u.status === 'danger');
     const hasSuspiciousUrl = urlStatuses.some((u) => u.status === 'suspicious');
+    const emergencyScam = detectEmergencyTransferScam(combined);
 
-    if (matchedRed.length >= 2 || hasDangerUrl || receiptForensics.anomalies.length > 0) {
+    if (
+      matchedRed.length >= 2 ||
+      hasDangerUrl ||
+      receiptForensics.anomalies.length > 0 ||
+      emergencyScam.triggered
+    ) {
       level = 'red';
       scamType =
         receiptForensics.anomalies.length > 0
           ? 'Biên lai chuyển khoản / giải ngân giả mạo'
           : hasDangerUrl
             ? 'Giả mạo đường link / QR ngân hàng & cơ quan'
-            : 'Kịch bản lừa đảo chiếm đoạt tài sản';
-      summary =
-        'Phát hiện dấu hiệu lừa đảo rõ ràng như thúc ép khẩn cấp, yêu cầu OTP/phí giải ngân hoặc đường link giả mạo.';
+            : emergencyScam.triggered
+              ? emergencyScam.isTeacherOrMedical
+                ? 'Giả danh thầy cô/bác sĩ báo cấp cứu lừa chuyển tiền'
+                : 'Báo tai nạn/cấp cứu khẩn cấp thúc ép chuyển tiền'
+              : 'Kịch bản lừa đảo chiếm đoạt tài sản';
+      summary = emergencyScam.triggered
+        ? 'Phát hiện kịch bản lừa đảo khẩn cấp: báo tin tai nạn/cấp cứu và thúc ép chuyển tiền gấp vào tài khoản cá nhân.'
+        : 'Phát hiện dấu hiệu lừa đảo rõ ràng như thúc ép khẩn cấp, yêu cầu OTP/phí giải ngân hoặc đường link giả mạo.';
+      if (emergencyScam.triggered) {
+        evidence.push({
+          category: 'Kịch bản báo cấp cứu giả mạo',
+          finding: emergencyScam.evidence,
+          severity: 'high',
+        });
+      }
       if (matchedRed.length > 0) {
         evidence.push({
           category: 'Ngôn từ thúc ép / nhạy cảm',
@@ -522,11 +648,19 @@ export function evaluateRuleBasedMessage(
           severity: 'high',
         });
       }
-      actionSteps.push(
-        'Tuyệt đối không chuyển tiền, không đọc mã OTP và không cài tệp/ứng dụng lạ.',
-        'Không bấm vào liên kết hoặc quét mã QR trong nội dung này.',
-        'Tự gọi lại số ngân hàng sau thẻ ATM hoặc người thân theo số cũ đã lưu.'
-      );
+      if (emergencyScam.triggered) {
+        actionSteps.push(
+          'DỪNG NGAY: Tuyệt đối không chuyển tiền vào số tài khoản lạ dù tin nhắn báo cấp cứu hoặc mổ gấp.',
+          'Gọi trực tiếp ngay vào số điện thoại cũ của bố mẹ cháu, giáo viên chủ nhiệm hoặc tổng đài bệnh viện để kiểm chứng.',
+          'Không tin lời thúc ép chuyển khoản gấp; hỏi ngay Câu hỏi bí mật gia đình hoặc gọi số SOS người thân.'
+        );
+      } else {
+        actionSteps.push(
+          'Tuyệt đối không chuyển tiền, không đọc mã OTP và không cài tệp/ứng dụng lạ.',
+          'Không bấm vào liên kết hoặc quét mã QR trong nội dung này.',
+          'Tự gọi lại số ngân hàng sau thẻ ATM hoặc người thân theo số cũ đã lưu.'
+        );
+      }
     } else if (matchedRed.length === 1 || hasSuspiciousUrl || detectFamilyImpersonationTrigger(combined)) {
       level = 'orange';
       scamType = detectFamilyImpersonationTrigger(combined)
@@ -688,6 +822,33 @@ export function mergeImageScanSignals(
       'Đây có vẻ là thông báo khuyến mãi từ tên miền chính thức của VNPT/VinaPhone và không hỏi OTP hay chuyển khoản cá nhân.';
   }
 
+  const emergencyScam = detectEmergencyTransferScam(combinedText);
+  if (emergencyScam.triggered) {
+    level = 'red';
+    if (isGenericGreenCopy || aiScan.alertLevel !== 'red') {
+      scamType = emergencyScam.isTeacherOrMedical
+        ? 'Giả danh thầy cô/bác sĩ báo cấp cứu lừa chuyển tiền'
+        : 'Báo tai nạn/cấp cứu khẩn cấp thúc ép chuyển tiền';
+      if (isGenericGreenCopy) {
+        summary =
+          'Phát hiện kịch bản lừa đảo khẩn cấp: báo tin tai nạn/cấp cứu và thúc ép chuyển tiền gấp vào tài khoản cá nhân.';
+      }
+    }
+    if (!evidence.some((ev) => ev.category === 'Kịch bản báo cấp cứu giả mạo')) {
+      evidence.unshift({
+        category: 'Kịch bản báo cấp cứu giả mạo',
+        finding: emergencyScam.evidence,
+        severity: 'high',
+      });
+    }
+    if (actionSteps.length === 0) {
+      actionSteps.push(
+        'DỪNG NGAY: Tuyệt đối không chuyển tiền vào số tài khoản lạ dù tin nhắn báo cấp cứu hoặc mổ gấp.',
+        'Gọi trực tiếp ngay vào số điện thoại cũ của bố mẹ cháu, giáo viên chủ nhiệm hoặc tổng đài bệnh viện để kiểm chứng.'
+      );
+    }
+  }
+
   const impersonation = detectImpersonation(combinedText, contacts);
   if (impersonation.matchedBlocked.length > 0) {
     level = 'red';
@@ -710,12 +871,24 @@ export function mergeImageScanSignals(
   const familyChallengeTriggered =
     aiScan.familyChallengeTriggered || detectFamilyImpersonationTrigger(combinedText);
 
-  const replyLines = [summary];
-  if (impersonationWarning) {
-    replyLines.unshift(`⚠️ ${impersonationWarning}`);
+  const dedupedActionSteps = Array.from(
+    new Set(actionSteps.map((s) => s.trim()).filter(Boolean))
+  );
+
+  const normSummary = summary.trim();
+  const normWarning = impersonationWarning.trim();
+  const summaryDuplicatesWarning =
+    Boolean(normWarning) &&
+    (normSummary === normWarning || normSummary.includes(normWarning));
+
+  const replyLines = [
+    summaryDuplicatesWarning ? `⚠️ ${normSummary}` : normSummary,
+  ];
+  if (normWarning && !summaryDuplicatesWarning) {
+    replyLines.push(`⚠️ ${normWarning}`);
   }
-  if (actionSteps.length > 0) {
-    replyLines.push('', 'Cần làm gì:', ...actionSteps.map((s) => `- ${s}`));
+  if (dedupedActionSteps.length > 0) {
+    replyLines.push('', 'Cần làm gì:', ...dedupedActionSteps.map((s) => `- ${s}`));
   }
 
   return {
@@ -730,7 +903,7 @@ export function mergeImageScanSignals(
       bankAccounts: mergedAccounts,
       qrPayload: qrPayload || aiScan.extractedEntities?.qrPayload || '',
     },
-    actionSteps,
+    actionSteps: dedupedActionSteps,
     receiptForensics,
     vietQr: parsedVietQr,
     familyChallengeTriggered,

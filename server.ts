@@ -96,7 +96,7 @@ function getGenAIClient(): GoogleGenAI | null {
 
 const SAFEAI_SYSTEM_PROMPT = `Bạn là SafeAI — Trợ lý An toàn AI bảo vệ người dùng (đặc biệt là người cao tuổi tại Việt Nam) trước các thủ đoạn lừa đảo trực tuyến.
 Nguyên tắc phân loại mức độ:
-- red (Cảnh báo Đỏ - Nguy hiểm): Có dấu hiệu lừa đảo rõ ràng: đòi mã OTP/mật khẩu/mã PIN; giả danh công an/viện kiểm sát/tòa án/ngân hàng đe dọa; yêu cầu chuyển tiền/nạp tiền để nhận thưởng/giải ngân/mở khóa; hứa hẹn lợi nhuận chắc chắn; cài app lạ/cấp quyền điều khiển màn hình; ảnh biên lai chuyển khoản giả mạo hoặc mã QR dẫn tới trang giả mạo.
+- red (Cảnh báo Đỏ - Nguy hiểm): Có dấu hiệu lừa đảo rõ ràng: đòi mã OTP/mật khẩu/mã PIN; giả danh công an/viện kiểm sát/tòa án/ngân hàng đe dọa; giả danh thầy cô/bác sĩ báo con cháu bị tai nạn cấp cứu/mổ gấp đòi chuyển tiền vào tài khoản cá nhân; yêu cầu chuyển tiền/nạp tiền để nhận thưởng/giải ngân/mở khóa; hứa hẹn lợi nhuận chắc chắn; cài app lạ/cấp quyền điều khiển màn hình; ảnh biên lai chuyển khoản giả mạo hoặc mã QR dẫn tới trang giả mạo.
 - orange (Cảnh báo Cam - Đáng ngờ): Có yếu tố bất thường hoặc chưa xác minh được nguồn gốc, thúc ép hành động nhẹ, link lạ chưa rõ uy tín, hoặc ảnh bị mờ/cắt góc không đọc đủ ngữ cảnh. Không tự nâng lên red nếu thiếu căn cứ rõ ràng.
 - green (Cảnh báo Xanh - An toàn): Thông báo dịch vụ, hóa đơn, khuyến mãi hợp lệ (ví dụ từ tên miền chính thức của nhà mạng/ngân hàng) và không yêu cầu OTP, mật khẩu hay chuyển khoản vào tài khoản cá nhân.
 
@@ -634,6 +634,13 @@ function buildOfflineAdvisorReply(
     };
   }
 
+  if (ruleEval.alertLevel === 'orange') {
+    return {
+      alertLevel: 'orange',
+      reply: `${ruleEval.summary}\n\nCụ cần kiểm chứng ngay:\n${ruleEval.actionSteps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+    };
+  }
+
   const fallbackReply = `${ruleEval.summary}\n\nNếu Cụ đang nhận tin nhắn, cuộc gọi hoặc ảnh chụp đáng nghi, Cụ có thể chụp màn hình tải sang mục "Kiểm tra" hoặc kể rõ nội dung người ta vừa nói với Cụ để cháu kiểm tra từng chi tiết cho Cụ nhé.`;
   return {
     alertLevel: classifyChatAlertLevel(message, fallbackReply, scanContext),
@@ -1140,10 +1147,8 @@ Kiểm tra kỹ cả 5 khía cạnh:
       const merged = mergeImageScanSignals(baseScan, '', contacts);
       return res.json(merged);
     } catch (error) {
-      console.error('Text analysis error:', error);
-      return res.status(502).json({
-        error: 'Chưa thể phân tích nội dung lúc này. Vui lòng thử lại.',
-      });
+      console.warn('Text analysis error, falling back to rule engine:', error);
+      return res.json(evaluateRuleBasedMessage(trimmed, '', contacts));
     }
   });
 

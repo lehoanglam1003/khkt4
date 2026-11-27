@@ -1361,11 +1361,12 @@ export function UnifiedSafeStudio({
                 </div>
               </div>
 
-              {latestScan.impersonationWarning && (
-                <div className="rounded-xl border-2 border-red-400 bg-red-50 p-3.5 text-sm font-semibold text-red-900">
-                  {latestScan.impersonationWarning}
-                </div>
-              )}
+              {latestScan.impersonationWarning &&
+                latestScan.impersonationWarning.trim() !== latestScan.summary.trim() && (
+                  <div className="rounded-xl border-2 border-red-400 bg-red-50 p-3.5 text-sm font-semibold text-red-900">
+                    {latestScan.impersonationWarning}
+                  </div>
+                )}
 
               {latestScan.familyChallengeTriggered && (
                 <div className="rounded-xl border-2 border-orange-400 bg-orange-50 p-3.5 text-orange-950">
